@@ -40,7 +40,7 @@ COLORS = {
 }
 
 # 默认字体大小
-DEFAULT_FONT_SIZE = 13
+DEFAULT_FONT_SIZE = 16
 
 
 class EditDialog(QDialog):
@@ -586,7 +586,7 @@ class ToolbarWidget(QWidget):
         
         # 字体大小滑块
         font_slider = QSlider(Qt.Horizontal)
-        font_slider.setRange(10, 18)
+        font_slider.setRange(10, 30)
         font_slider.setValue(self.font_size)
         font_slider.setFixedWidth(80)
         font_slider.setStyleSheet(f"""
