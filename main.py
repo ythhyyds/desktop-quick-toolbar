@@ -19,10 +19,10 @@ from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QHBoxLayout,
     QPushButton, QLabel, QFrame, QScrollArea, QMenu,
     QDialog, QLineEdit, QComboBox, QFileDialog, QListWidget,
-    QListWidgetItem, QMessageBox, QGraphicsDropShadowEffect, QSizePolicy
+    QListWidgetItem, QMessageBox, QGraphicsDropShadowEffect, QSizePolicy, QSlider
 )
 from PyQt5.QtCore import Qt, QTimer, QPoint, pyqtSignal, QRect
-from PyQt5.QtGui import QCursor, QColor
+from PyQt5.QtGui import QCursor, QColor, QFont
 
 CONFIG_FILE = Path(os.path.dirname(os.path.abspath(__file__))) / "config" / "toolbar.json" if '__file__' in globals() else Path(r"C:\Users\Administrator\.openclaw\workspace\desktop-organizer\config\toolbar.json")
 
@@ -38,6 +38,9 @@ COLORS = {
     'hover': '#f0f7ff',
     'shadow': 'rgba(0, 0, 0, 0.08)'
 }
+
+# 默认字体大小
+DEFAULT_FONT_SIZE = 13
 
 
 class EditDialog(QDialog):
@@ -215,7 +218,7 @@ class CategoryLabel(QFrame):
     
     item_dropped = pyqtSignal(str, str)
     
-    def __init__(self, text, category, parent=None):
+    def __init__(self, text, category, font_size=DEFAULT_FONT_SIZE, parent=None):
         super().__init__(parent)
         self.category = category
         self.setAcceptDrops(True)
@@ -236,7 +239,7 @@ class CategoryLabel(QFrame):
         layout.setContentsMargins(10, 6, 10, 6)
         
         self.label = QLabel(f"▼ {text}")
-        self.label.setStyleSheet(f"font-size: 12px; font-weight: 600; color: {COLORS['primary']};")
+        self.label.setStyleSheet(f"font-size: {font_size}px; font-weight: 600; color: {COLORS['primary']};")
         layout.addWidget(self.label)
     
     def dragEnterEvent(self, event):
@@ -283,9 +286,10 @@ class CategoryLabel(QFrame):
 class FolderContentWidget(QWidget):
     """文件夹内容展示"""
     
-    def __init__(self, folder_path, parent=None):
+    def __init__(self, folder_path, font_size=DEFAULT_FONT_SIZE, parent=None):
         super().__init__(parent)
         self.folder_path = folder_path
+        self.font_size = font_size
         
         self.setStyleSheet(f"""
             QWidget {{
@@ -309,7 +313,7 @@ class FolderContentWidget(QWidget):
                 padding: 6px 10px;
                 border: none;
                 border-bottom: 1px solid {COLORS['border']};
-                font-size: 11px;
+                font-size: {font_size - 1}px;
             }}
             QListWidget::item:hover {{
                 background: {COLORS['primary_light']};
@@ -363,10 +367,11 @@ class FolderContentWidget(QWidget):
 class ExpandableFolderButton(QWidget):
     """可展开的文件夹按钮"""
     
-    def __init__(self, name, path, parent=None):
+    def __init__(self, name, path, font_size=DEFAULT_FONT_SIZE, parent=None):
         super().__init__(parent)
         self.path = path
         self.name = name
+        self.font_size = font_size
         self.is_expanded = False
         
         self.setStyleSheet(f"""
@@ -419,7 +424,7 @@ class ExpandableFolderButton(QWidget):
                 border: none;
                 text-align: left;
                 padding: 2px 2px;
-                font-size: 11px;
+                font-size: {font_size}px;
                 color: {COLORS['text']};
             }}
             QPushButton:hover {{
@@ -443,7 +448,7 @@ class ExpandableFolderButton(QWidget):
             self.is_expanded = False
         else:
             self.expand_btn.setText("▼")
-            self.content_widget = FolderContentWidget(self.path)
+            self.content_widget = FolderContentWidget(self.path, self.font_size)
             self.main_layout.addWidget(self.content_widget)
             self.is_expanded = True
     
@@ -455,7 +460,7 @@ class ExpandableFolderButton(QWidget):
 class QuickButton(QPushButton):
     """快捷按钮"""
     
-    def __init__(self, name, path, type_, parent=None):
+    def __init__(self, name, path, type_, font_size=DEFAULT_FONT_SIZE, parent=None):
         super().__init__(parent)
         self.path = path
         self.type_ = type_
@@ -472,7 +477,7 @@ class QuickButton(QPushButton):
                 border: none;
                 text-align: left;
                 padding: 6px 12px;
-                font-size: 12px;
+                font-size: {font_size}px;
                 color: {COLORS['text']};
                 border-radius: 6px;
             }}
@@ -507,6 +512,7 @@ class ToolbarWidget(QWidget):
         self.setAttribute(Qt.WA_ShowWithoutActivating)
         
         self.position = 'left'
+        self.font_size = DEFAULT_FONT_SIZE  # 字体大小
         self.is_hidden = True
         self.hide_timer = QTimer()
         self.hide_timer.setSingleShot(True)
@@ -524,9 +530,11 @@ class ToolbarWidget(QWidget):
         if CONFIG_FILE.exists():
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 self.config = json.load(f)
+                self.font_size = self.config.get('font_size', DEFAULT_FONT_SIZE)
         else:
             self.config = {
                 'position': 'left',
+                'font_size': DEFAULT_FONT_SIZE,
                 'categories': ['常用', '工作', '工具'],
                 'items': {
                     '常用': [
@@ -572,9 +580,34 @@ class ToolbarWidget(QWidget):
         # 标题栏
         header = QHBoxLayout()
         title = QLabel("⚡ 快捷工具")
-        title.setStyleSheet(f"font-size: 14px; font-weight: 700; color: {COLORS['text']};")
+        title.setStyleSheet(f"font-size: {self.font_size + 1}px; font-weight: 700; color: {COLORS['text']};")
         header.addWidget(title)
         header.addStretch()
+        
+        # 字体大小滑块
+        font_slider = QSlider(Qt.Horizontal)
+        font_slider.setRange(10, 18)
+        font_slider.setValue(self.font_size)
+        font_slider.setFixedWidth(80)
+        font_slider.setStyleSheet(f"""
+            QSlider::groove:horizontal {{
+                background: {COLORS['bg']};
+                height: 6px;
+                border-radius: 3px;
+            }}
+            QSlider::handle:horizontal {{
+                background: {COLORS['primary']};
+                width: 14px;
+                margin: -4px 0;
+                border-radius: 7px;
+            }}
+        """)
+        font_slider.valueChanged.connect(self.change_font_size)
+        header.addWidget(font_slider)
+        
+        self.font_label = QLabel(f"{self.font_size}")
+        self.font_label.setStyleSheet(f"font-size: 11px; color: {COLORS['text_secondary']}; min-width: 20px;")
+        header.addWidget(self.font_label)
         
         settings_btn = QPushButton("⚙")
         settings_btn.setFixedSize(28, 28)
@@ -626,7 +659,7 @@ class ToolbarWidget(QWidget):
                 item.widget().deleteLater()
         
         for cat in self.config['categories']:
-            cat_label = CategoryLabel(cat, cat)
+            cat_label = CategoryLabel(cat, cat, self.font_size)
             cat_label.item_dropped.connect(self.handle_drop)
             cat_label.setContextMenuPolicy(Qt.CustomContextMenu)
             cat_label.customContextMenuRequested.connect(lambda pos, c=cat: self.show_cat_menu(c))
@@ -635,9 +668,9 @@ class ToolbarWidget(QWidget):
             items = self.config['items'].get(cat, [])
             for item in items:
                 if item['type'] == '文件夹':
-                    btn = ExpandableFolderButton(item['name'], item['path'])
+                    btn = ExpandableFolderButton(item['name'], item['path'], self.font_size)
                 else:
-                    btn = QuickButton(item['name'], item['path'], item['type'])
+                    btn = QuickButton(item['name'], item['path'], item['type'], self.font_size)
                 
                 btn.setContextMenuPolicy(Qt.CustomContextMenu)
                 btn.customContextMenuRequested.connect(lambda pos, i=item, c=cat: self.show_item_menu(i, c))
@@ -820,6 +853,14 @@ class ToolbarWidget(QWidget):
             self.config['items'].pop(cat, None)
             self.save_config()
             self.refresh_content()
+    
+    def change_font_size(self, size):
+        """改变字体大小"""
+        self.font_size = size
+        self.config['font_size'] = size
+        self.save_config()
+        self.font_label.setText(f"{size}")
+        self.refresh_content()
     
     def set_position(self, edge):
         pos_map = {'左边': 'left', '右边': 'right', '顶部': 'top', '底部': 'bottom'}
