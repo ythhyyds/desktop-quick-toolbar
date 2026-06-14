@@ -112,7 +112,7 @@ python main.py
 
 ## 👤 作者
 
-- GitHub: @[你的用户名]
+- GitHub: [@ythhyyds](https://github.com/ythhyyds)
 
 ---
 
