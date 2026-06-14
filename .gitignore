@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# PyQt
+*.ui.py
+
+# Config (user specific)
+config/
+
+# Logs
+*.log
+error.log
+
+# OS
+.Desktop.ini
+Thumbs.db
